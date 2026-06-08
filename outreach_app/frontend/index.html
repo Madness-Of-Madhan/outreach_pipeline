@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Outreach Pipeline</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    header h1 {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    header span {
+      font-size: 12px;
+      color: #888;
+      background: #f0f0f0;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    .main {
+      max-width: 860px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #111;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    input[type="text"]:focus {
+      border-color: #4f6ef7;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: #4f6ef7;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    button:hover {
+      background: #3a57d4;
+    }
+
+    button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    /* pipeline stages */
+    .stages {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stage {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stage .num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #f0f0f0;
+      color: #888;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 8px;
+    }
+
+    .stage.active .num {
+      background: #4f6ef7;
+      color: #fff;
+    }
+
+    .stage.done .num {
+      background: #22c55e;
+      color: #fff;
+    }
+
+    .stage.error .num {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    .stage .label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 2px;
+    }
+
+    .stage .sub {
+      font-size: 11px;
+      color: #aaa;
+    }
+
+    .stage .count {
+      font-size: 20px;
+      font-weight: 700;
+      color: #111;
+      margin-top: 8px;
+    }
+
+    /* log box */
+    .log-box {
+      background: #111;
+      border-radius: 6px;
+      padding: 16px;
+      height: 260px;
+      overflow-y: auto;
+      font-family: "Courier New", monospace;
+      font-size: 12px;
+      color: #ccc;
+    }
+
+    .log-box .line {
+      margin-bottom: 3px;
+      line-height: 1.5;
+    }
+
+    .log-box .line.stage1 { color: #60a5fa; }
+    .log-box .line.stage2 { color: #a78bfa; }
+    .log-box .line.stage3 { color: #34d399; }
+    .log-box .line.stage4 { color: #fbbf24; }
+    .log-box .line.error  { color: #f87171; }
+
+    /* results table */
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .results-table th {
+      text-align: left;
+      padding: 8px 12px;
+      background: #f9f9f9;
+      border-bottom: 1px solid #e0e0e0;
+      font-weight: 600;
+      color: #555;
+      font-size: 12px;
+    }
+
+    .results-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #f0f0f0;
+      color: #333;
+    }
+
+    .results-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge.green {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .badge.gray {
+      background: #f0f0f0;
+      color: #666;
+    }
+
+    .hidden { display: none; }
+
+    .summary-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .stat {
+      background: #f9f9f9;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 12px 16px;
+      flex: 1;
+      text-align: center;
+    }
+
+    .stat .n {
+      font-size: 24px;
+      font-weight: 700;
+      color: #111;
+    }
+
+    .stat .l {
+      font-size: 11px;
+      color: #888;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Outreach Pipeline</h1>
+  <span>4 stages, zero humans</span>
+</header>
+
+<div class="main">
+
+  <!-- input -->
+  <div class="card">
+    <h2>Enter a seed domain</h2>
+    <div class="input-row">
+      <input type="text" id="domain-input" placeholder="e.g. openai.com" />
+      <button id="run-btn" onclick="startPipeline()">Run Pipeline</button>
+    </div>
+    <p style="font-size:12px; color:#aaa; margin-top:10px;">
+      The pipeline will find similar companies, locate decision-makers, get their work emails, and send outreach — automatically.
+    </p>
+  </div>
+
+  <!-- stage indicators -->
+  <div class="stages">
+    <div class="stage" id="s1">
+      <div class="num">1</div>
+      <div class="label">Ocean.io</div>
+      <div class="sub">Lookalike companies</div>
+      <div class="count" id="s1-count">—</div>
+    </div>
+    <div class="stage" id="s2">
+      <div class="num">2</div>
+      <div class="label">Prospeo</div>
+      <div class="sub">Decision makers</div>
+      <div class="count" id="s2-count">—</div>
+    </div>
+    <div class="stage" id="s3">
+      <div class="num">3</div>
+      <div class="label">Emails</div>
+      <div class="sub">Verified via Prospeo</div>
+      <div class="count" id="s3-count">—</div>
+    </div>
+    <div class="stage" id="s4">
+      <div class="num">4</div>
+      <div class="label">Brevo</div>
+      <div class="sub">Emails sent</div>
+      <div class="count" id="s4-count">—</div>
+    </div>
+  </div>
+
+  <!-- logs -->
+  <div class="card">
+    <h2>Live logs</h2>
+    <div class="log-box" id="log-box">
+      <div class="line" style="color:#555;">Waiting for input...</div>
+    </div>
+  </div>
+
+  <!-- results -->
+  <div class="card hidden" id="results-card">
+    <h2>Results</h2>
+    <div class="summary-row" id="summary-row"></div>
+    <table class="results-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Company</th>
+          <th>Email</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="results-body"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+  let running = false
+
+  function startPipeline() {
+    if (running) return
+
+    const domain = document.getElementById("domain-input").value.trim()
+    if (!domain) {
+      alert("Please enter a domain")
+      return
+    }
+
+    running = true
+    document.getElementById("run-btn").disabled = true
+    document.getElementById("run-btn").textContent = "Running..."
+    document.getElementById("results-card").classList.add("hidden")
+
+    clearLog()
+    addLog("Starting pipeline for: " + domain, "")
+    resetStages()
+
+    const evtSource = new EventSource(`/run?domain=${encodeURIComponent(domain)}`)
+
+    evtSource.onmessage = function(e) {
+      const msg = JSON.parse(e.data)
+
+      if (msg.type === "ping") return
+
+      if (msg.type === "log") {
+        const text = msg.message
+        const cls  = getLineClass(text)
+        addLog(text, cls)
+        updateStageFromLog(text)
+      }
+
+      if (msg.type === "result") {
+        evtSource.close()
+        handleResult(msg.data)
+        running = false
+        document.getElementById("run-btn").disabled = false
+        document.getElementById("run-btn").textContent = "Run Pipeline"
+      }
+    }
+
+    evtSource.onerror = function() {
+      evtSource.close()
+      addLog("Connection error", "error")
+      running = false
+      document.getElementById("run-btn").disabled = false
+      document.getElementById("run-btn").textContent = "Run Pipeline"
+    }
+  }
+
+  function getLineClass(text) {
+    if (text.includes("[stage 1]")) return "stage1"
+    if (text.includes("[stage 2]")) return "stage2"
+    if (text.includes("[stage 3]")) return "stage3"
+    if (text.includes("[stage 4]")) return "stage4"
+    if (text.includes("error") || text.includes("failed")) return "error"
+    return ""
+  }
+
+  function updateStageFromLog(text) {
+    if (text.includes("[stage 1]")) setStageActive("s1")
+    if (text.includes("[stage 2]") && !text.includes("stage 3")) setStageActive("s2")
+    if (text.includes("[stage 3]")) setStageActive("s3")
+    if (text.includes("[stage 4]")) setStageActive("s4")
+  }
+
+  function handleResult(data) {
+    if (!data) return
+
+    const domains  = data.domains  || []
+    const contacts = data.contacts || []
+    const sent     = data.emails_sent || 0
+    const withEmail = contacts.filter(c => c.work_email)
+
+    document.getElementById("s1-count").textContent = domains.length
+    document.getElementById("s2-count").textContent = contacts.length
+    document.getElementById("s3-count").textContent = withEmail.length
+    document.getElementById("s4-count").textContent = sent
+
+    setStageActive("s1", true)
+    setStageActive("s2", true)
+    setStageActive("s3", true)
+    setStageActive("s4", true)
+
+    // fill results table
+    const card   = document.getElementById("results-card")
+    const body   = document.getElementById("results-body")
+    const sumRow = document.getElementById("summary-row")
+
+    sumRow.innerHTML = `
+      <div class="stat"><div class="n">${domains.length}</div><div class="l">Companies found</div></div>
+      <div class="stat"><div class="n">${contacts.length}</div><div class="l">Decision makers</div></div>
+      <div class="stat"><div class="n">${withEmail.length}</div><div class="l">Emails verified</div></div>
+      <div class="stat"><div class="n">${sent}</div><div class="l">Emails sent</div></div>
+    `
+
+    body.innerHTML = ""
+    contacts.forEach(c => {
+      const hasEmail = !!c.work_email
+      const row = document.createElement("tr")
+      row.innerHTML = `
+        <td>${c.full_name || "—"}</td>
+        <td>${c.company_name || "—"}</td>
+        <td>${c.work_email || "—"}</td>
+        <td><span class="badge ${hasEmail ? 'green' : 'gray'}">${hasEmail ? 'sent' : 'no email'}</span></td>
+      `
+      body.appendChild(row)
+    })
+
+    card.classList.remove("hidden")
+
+    if (data.errors && data.errors.length > 0) {
+      data.errors.forEach(e => addLog("Error: " + e, "error"))
+    }
+  }
+
+  function addLog(text, cls) {
+    const box  = document.getElementById("log-box")
+    const line = document.createElement("div")
+    line.className = "line " + (cls || "")
+    line.textContent = "> " + text
+    box.appendChild(line)
+    box.scrollTop = box.scrollHeight
+  }
+
+  function clearLog() {
+    document.getElementById("log-box").innerHTML = ""
+  }
+
+  function resetStages() {
+    ;["s1","s2","s3","s4"].forEach(id => {
+      const el = document.getElementById(id)
+      el.classList.remove("active", "done", "error")
+      document.getElementById(id + "-count").textContent = "—"
+    })
+  }
+
+  function setStageActive(id, done=false) {
+    const el = document.getElementById(id)
+    el.classList.remove("active", "done", "error")
+    el.classList.add(done ? "done" : "active")
+  }
+
+  // allow pressing enter in the input
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("domain-input").addEventListener("keydown", e => {
+      if (e.key === "Enter") startPipeline()
+    })
+  })
+</script>
+
+</body>
+</html>
